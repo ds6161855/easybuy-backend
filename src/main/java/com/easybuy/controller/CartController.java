@@ -12,7 +12,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/cart")
-@CrossOrigin(origins = "https://easybuy-backend-85si.onrender.com")
+@CrossOrigin(origins = "https://easybuy-frontend-ochre.vercel.app")
 public class CartController {
 
     private final CartService cartService;
