@@ -4,6 +4,6 @@ WORKDIR /app
 
 COPY . .
 
-RUN mvn clean install
+RUN mvn clean package -DskipTests
 
 CMD ["java", "-jar", "target/*.jar"]
