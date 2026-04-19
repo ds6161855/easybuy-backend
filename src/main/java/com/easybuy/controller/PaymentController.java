@@ -17,7 +17,7 @@ import com.easybuy.service.PaymentService;
 
 @RestController
 @RequestMapping("/api/payments")
-@CrossOrigin(origins = "https://easybuy-backend-xadk.onrender.com")
+@CrossOrigin(origins = "https://easybuy-backend-85si.onrender.com")
 public class PaymentController {
 
     private final RazorpayService razorpayService;
