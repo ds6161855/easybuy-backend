@@ -14,7 +14,7 @@ public class CorsConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         config.setAllowCredentials(true);
-        config.addAllowedOrigin("https://easybuy-frontend-git-main-ds6161855s-projects.vercel.app");
+        config.addAllowedOrigin("https://easybuy-frontend-ochre.vercel.app");
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
 
