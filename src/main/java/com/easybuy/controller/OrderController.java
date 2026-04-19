@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/orders")
-@CrossOrigin(origins = "https://easybuy-backend-85si.onrender.com")
+@CrossOrigin(origins = "https://easybuy-frontend-ochre.vercel.app")
 public class OrderController {
 
     private final OrderRepository orderRepository;
