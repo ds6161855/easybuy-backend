@@ -11,7 +11,7 @@ import com.easybuy.service.CartService;
 
 @RestController
 @RequestMapping("/api/products")
-@CrossOrigin(origins = "https://easybuy-backend-85si.onrender.com")
+@CrossOrigin(origins = "https://easybuy-frontend-ochre.vercel.app")
 public class ProductController {
 
     private final ProductService productService;
