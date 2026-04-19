@@ -11,7 +11,7 @@ import com.easybuy.service.EasybuyAuthService;
 
 import lombok.RequiredArgsConstructor;
 
-@CrossOrigin(origins = "https://easybuy-backend-xadk.onrender.com")
+@CrossOrigin(origins = "https://easybuy-backend-85si.onrender.com")
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
