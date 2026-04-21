@@ -16,7 +16,7 @@ import com.easybuy.repository.EasybuyUserRepository;
 import com.twilio.Twilio;
 import com.twilio.rest.verify.v2.service.Verification;
 import com.twilio.rest.verify.v2.service.VerificationCheck;
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 
 
 import io.jsonwebtoken.security.Keys; // ✅ IMPORTANT IMPORT
