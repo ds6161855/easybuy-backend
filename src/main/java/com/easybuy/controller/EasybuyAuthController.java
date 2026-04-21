@@ -27,11 +27,19 @@ public class EasybuyAuthController {
         try {
             String mobile = body.get("mobile");
 
-            if (mobile == null || !mobile.matches("^[6-9]\\d{9}$")) {
-                return ResponseEntity.badRequest().body(
-                        Map.of("success", false, "message", "Invalid mobile number")
-                );
-            }
+if (mobile == null || mobile.trim().isEmpty()) {
+    return ResponseEntity.badRequest().body(
+            Map.of("success", false, "message", "Mobile is required")
+    );
+}
+
+mobile = mobile.trim();
+
+if (!mobile.matches("^[6-9]\\d{9}$")) {
+    return ResponseEntity.badRequest().body(
+            Map.of("success", false, "message", "Invalid mobile number")
+    );
+}
 
             if (isLogin && !service.isMobileRegistered(mobile)) {
                 return ResponseEntity.badRequest().body(
@@ -136,13 +144,18 @@ public class EasybuyAuthController {
 
         try {
             String mobile = body.get("mobile");
-            String otp = body.get("otp");
+String otp = body.get("otp");
 
-            if (mobile == null || otp == null) {
-                return ResponseEntity.badRequest().body(
-                        Map.of("success", false, "message", "Mobile and OTP required")
-                );
-            }
+if (mobile == null || otp == null || 
+    mobile.trim().isEmpty() || otp.trim().isEmpty()) {
+
+    return ResponseEntity.badRequest().body(
+            Map.of("success", false, "message", "Mobile and OTP required")
+    );
+}
+
+mobile = mobile.trim();
+otp = otp.trim();
 
             return service.verifyOtp(mobile, otp)
                     .map(user -> {
