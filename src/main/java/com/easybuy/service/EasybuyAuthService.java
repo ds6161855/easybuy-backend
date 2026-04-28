@@ -2,24 +2,21 @@ package com.easybuy.service;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
-
 import java.util.Optional;
 
 import javax.crypto.SecretKey;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.*;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import com.easybuy.entity.AccountStatus;
 import com.easybuy.entity.EasybuyUser;
 import com.easybuy.repository.EasybuyUserRepository;
-import com.twilio.Twilio;
-import com.twilio.rest.verify.v2.service.Verification;
-import com.twilio.rest.verify.v2.service.VerificationCheck;
-import jakarta.annotation.PostConstruct;
 
-
-import io.jsonwebtoken.security.Keys; // ✅ IMPORTANT IMPORT
+import io.jsonwebtoken.security.Keys;
 
 import lombok.RequiredArgsConstructor;
 
@@ -28,15 +25,11 @@ import lombok.RequiredArgsConstructor;
 public class EasybuyAuthService {
 
     private final EasybuyUserRepository repository;
-    private final String SID = System.getenv("TWILIO_ACCOUNT_SID");
-private final String TOKEN = System.getenv("TWILIO_AUTH_TOKEN");
-private final String SERVICE_SID = System.getenv("TWILIO_VERIFY_SERVICE_SID");
 
     private static final int OTP_EXPIRY_MINUTES = 5;
     private final SecureRandom secureRandom = new SecureRandom();
-    
 
-    // ✅ PROPER SECRET KEY (at least 32 chars)
+    // ✅ JWT SECRET
     private static final String SECRET = "mySuperSecretKeyForJwtToken12345678901234567890";
     private static final SecretKey SECRET_KEY = Keys.hmacShaKeyFor(SECRET.getBytes());
 
@@ -45,11 +38,6 @@ private final String SERVICE_SID = System.getenv("TWILIO_VERIFY_SERVICE_SID");
         if (mobile == null || mobile.trim().isEmpty()) return false;
         return repository.findByMobile(mobile.trim()).isPresent();
     }
-    @PostConstruct
-public void init() {
-    Twilio.init(SID, TOKEN);
-}
-    
 
     // ================= GET USER =================
     public EasybuyUser getUser(Long id) {
@@ -58,32 +46,63 @@ public void init() {
     }
 
     // ================= SEND OTP =================
-  @Transactional
-public void sendOtp(String mobile) {
+    @Transactional
+    public void sendOtp(String mobile) {
 
-    if (mobile == null || mobile.trim().isEmpty()) {
-        throw new RuntimeException("Mobile required");
+        if (mobile == null || mobile.trim().isEmpty()) {
+            throw new RuntimeException("Mobile required");
+        }
+
+        String trimmedMobile = mobile.trim();
+
+        EasybuyUser user = repository.findByMobile(trimmedMobile)
+                .orElseGet(() -> EasybuyUser.builder()
+                        .mobile(trimmedMobile)
+                        .accountStatus(AccountStatus.ACTIVE)
+                        .otpVerified(false)
+                        .build());
+
+        // 🔢 OTP generate
+        String otp = String.valueOf(1000 + secureRandom.nextInt(9000));
+
+        try {
+            String url = "https://www.fast2sms.com/dev/bulkV2";
+
+            RestTemplate restTemplate = new RestTemplate();
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("authorization", System.getenv("FAST2SMS_API_KEY"));
+
+            UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(url)
+                    .queryParam("route", "otp")
+                    .queryParam("variables_values", otp)
+                    .queryParam("flash", "0")
+                    .queryParam("numbers", trimmedMobile);
+
+            HttpEntity<String> entity = new HttpEntity<>(headers);
+
+            ResponseEntity<String> response = restTemplate.exchange(
+                    builder.toUriString(),
+                    HttpMethod.GET,
+                    entity,
+                    String.class
+            );
+
+            System.out.println("OTP SENT: " + otp);
+            System.out.println("Fast2SMS RESPONSE: " + response.getBody());
+
+            // 💾 OTP store
+            user.setOtp(otp);
+            user.setOtpExpiry(LocalDateTime.now().plusMinutes(OTP_EXPIRY_MINUTES));
+
+            repository.save(user);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("OTP sending failed");
+        }
     }
 
-    String trimmedMobile = mobile.trim();
-
-    EasybuyUser user = repository.findByMobile(trimmedMobile)
-            .orElseGet(() -> EasybuyUser.builder()
-                    .mobile(trimmedMobile)
-                    .accountStatus(AccountStatus.ACTIVE)
-                    .otpVerified(false)
-                    .build());
-
-    Verification.creator(
-            SERVICE_SID,
-            "+91" + trimmedMobile,
-            "sms"
-    ).create();
-
-    repository.save(user);
-
-    System.out.println("OTP SENT to " + trimmedMobile);
-}
     // ================= UPDATE PROFILE =================
     @Transactional
     public EasybuyUser updateProfile(Long userId, String name, String email, String address, String pan) {
@@ -101,43 +120,45 @@ public void sendOtp(String mobile) {
 
     // ================= VERIFY OTP =================
     @Transactional
-public Optional<EasybuyUser> verifyOtp(String mobile, String otp) {
+    public Optional<EasybuyUser> verifyOtp(String mobile, String otp) {
 
-    if (mobile == null || otp == null) {
-        return Optional.empty();
-    }
+        if (mobile == null || otp == null) {
+            return Optional.empty();
+        }
 
-    mobile = mobile.trim();
-    otp = otp.trim();
+        mobile = mobile.trim();
+        otp = otp.trim();
 
-    Optional<EasybuyUser> optionalUser = repository.findByMobile(mobile);
+        Optional<EasybuyUser> optionalUser = repository.findByMobile(mobile);
 
-    if (optionalUser.isEmpty()) {
-        return Optional.empty();
-    }
+        if (optionalUser.isEmpty()) {
+            return Optional.empty();
+        }
 
-    EasybuyUser user = optionalUser.get();
+        EasybuyUser user = optionalUser.get();
 
-    try {
-        VerificationCheck check = VerificationCheck.creator(SERVICE_SID)
-                .setTo("+91" + mobile)
-                .setCode(otp)
-                .create();
+        // ❌ OTP not present
+        if (user.getOtp() == null || user.getOtpExpiry() == null) {
+            return Optional.empty();
+        }
 
-        if ("approved".equals(check.getStatus())) {
+        // ⏱ expiry check
+        if (LocalDateTime.now().isAfter(user.getOtpExpiry())) {
+            return Optional.empty();
+        }
+
+        // 🔐 OTP match
+        if (otp.equals(user.getOtp())) {
 
             user.markOtpVerified();
+            user.setOtp(null);
+            user.setOtpExpiry(null);
+
             repository.save(user);
 
             return Optional.of(user);
         }
 
-    } catch (Exception e) {
-        System.out.println("OTP ERROR: " + e.getMessage());
+        return Optional.empty();
     }
-
-    return Optional.empty();
-}
-
-
 }
