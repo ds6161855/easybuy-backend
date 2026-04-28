@@ -150,9 +150,7 @@ if (user.getOtpGeneratedAt().plusMinutes(OTP_EXPIRY_MINUTES)
         // 🔐 OTP match
         if (otp.equals(user.getOtp())) {
 
-            user.markOtpVerified();
-            user.setOtp(null);
-            user.setOtpExpiry(null);
+              user.markOtpVerified();
 
             repository.save(user);
 
