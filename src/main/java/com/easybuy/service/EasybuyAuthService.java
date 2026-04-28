@@ -92,8 +92,7 @@ public class EasybuyAuthService {
             System.out.println("Fast2SMS RESPONSE: " + response.getBody());
 
             // 💾 OTP store
-            user.setOtp(otp);
-            user.setOtpExpiry(LocalDateTime.now().plusMinutes(OTP_EXPIRY_MINUTES));
+            user.generateOtp(otp);
 
             repository.save(user);
 
@@ -138,14 +137,15 @@ public class EasybuyAuthService {
         EasybuyUser user = optionalUser.get();
 
         // ❌ OTP not present
-        if (user.getOtp() == null || user.getOtpExpiry() == null) {
-            return Optional.empty();
-        }
+       if (user.getOtp() == null || user.getOtpGeneratedAt() == null) {
+    return Optional.empty();
+}
 
-        // ⏱ expiry check
-        if (LocalDateTime.now().isAfter(user.getOtpExpiry())) {
-            return Optional.empty();
-        }
+// ⏱ expiry check
+if (user.getOtpGeneratedAt().plusMinutes(OTP_EXPIRY_MINUTES)
+        .isBefore(LocalDateTime.now())) {
+    return Optional.empty();
+}
 
         // 🔐 OTP match
         if (otp.equals(user.getOtp())) {
