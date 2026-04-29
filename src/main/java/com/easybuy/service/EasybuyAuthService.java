@@ -68,25 +68,19 @@ public class EasybuyAuthService {
         try {
             String url = "https://www.fast2sms.com/dev/bulkV2";
 
-            RestTemplate restTemplate = new RestTemplate();
+UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(url)
+        .queryParam("authorization", System.getenv("FAST2SMS_API_KEY"))
+        .queryParam("route", "otp")
+        .queryParam("variables_values", otp)
+        .queryParam("flash", "0")
+        .queryParam("numbers", trimmedMobile);
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("authorization", System.getenv("FAST2SMS_API_KEY"));
+RestTemplate restTemplate = new RestTemplate();
 
-            UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(url)
-                    .queryParam("route", "otp")
-                    .queryParam("variables_values", otp)
-                    .queryParam("flash", "0")
-                    .queryParam("numbers", trimmedMobile);
-
-            HttpEntity<String> entity = new HttpEntity<>(headers);
-
-            ResponseEntity<String> response = restTemplate.exchange(
-                    builder.toUriString(),
-                    HttpMethod.GET,
-                    entity,
-                    String.class
-            );
+ResponseEntity<String> response = restTemplate.getForEntity(
+        builder.toUriString(),
+        String.class
+);
 
             System.out.println("OTP SENT: " + otp);
             System.out.println("Fast2SMS RESPONSE: " + response.getBody());
