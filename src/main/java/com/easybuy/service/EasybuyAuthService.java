@@ -8,9 +8,7 @@ import javax.crypto.SecretKey;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.http.*;
-import org.springframework.web.util.UriComponentsBuilder;
+
 
 import com.easybuy.entity.AccountStatus;
 import com.easybuy.entity.EasybuyUser;
@@ -46,56 +44,30 @@ public class EasybuyAuthService {
     }
 
     // ================= SEND OTP =================
-    @Transactional
-    public void sendOtp(String mobile) {
+   @Transactional
+public void sendOtp(String mobile) {
 
-        if (mobile == null || mobile.trim().isEmpty()) {
-            throw new RuntimeException("Mobile required");
-        }
-
-        String trimmedMobile = mobile.trim();
-
-        EasybuyUser user = repository.findByMobile(trimmedMobile)
-                .orElseGet(() -> EasybuyUser.builder()
-                        .mobile(trimmedMobile)
-                        .accountStatus(AccountStatus.ACTIVE)
-                        .otpVerified(false)
-                        .build());
-
-        // 🔢 OTP generate
-        String otp = String.valueOf(1000 + secureRandom.nextInt(9000));
-
-        try {
-            String url = "https://www.fast2sms.com/dev/bulkV2";
-
-UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(url)
-        .queryParam("authorization", System.getenv("FAST2SMS_API_KEY"))
-        .queryParam("route", "otp")
-        .queryParam("variables_values", otp)
-        .queryParam("flash", "0")
-        .queryParam("numbers", trimmedMobile);
-
-RestTemplate restTemplate = new RestTemplate();
-
-ResponseEntity<String> response = restTemplate.getForEntity(
-        builder.toUriString(),
-        String.class
-);
-
-            System.out.println("OTP SENT: " + otp);
-            System.out.println("Fast2SMS RESPONSE: " + response.getBody());
-
-            // 💾 OTP store
-            user.generateOtp(otp);
-
-            repository.save(user);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("OTP sending failed");
-        }
+    if (mobile == null || mobile.trim().isEmpty()) {
+        throw new RuntimeException("Mobile required");
     }
 
+    String trimmedMobile = mobile.trim();
+
+    EasybuyUser user = repository.findByMobile(trimmedMobile)
+            .orElseGet(() -> EasybuyUser.builder()
+                    .mobile(trimmedMobile)
+                    .accountStatus(AccountStatus.ACTIVE)
+                    .otpVerified(false)
+                    .build());
+
+    // 🔥 DEMO OTP (fixed)
+   String otp = String.valueOf(100000 + secureRandom.nextInt(900000));
+System.out.println("DEMO OTP for " + mobile + " : " + otp);
+
+    // 💾 DB में save
+    user.generateOtp(otp);
+    repository.save(user);
+}
     // ================= UPDATE PROFILE =================
     @Transactional
     public EasybuyUser updateProfile(Long userId, String name, String email, String address, String pan) {
@@ -145,6 +117,8 @@ if (user.getOtpGeneratedAt().plusMinutes(OTP_EXPIRY_MINUTES)
         if (otp.equals(user.getOtp())) {
 
               user.markOtpVerified();
+             user.setOtp(null);
+    user.setOtpGeneratedAt(null);
 
             repository.save(user);
 
