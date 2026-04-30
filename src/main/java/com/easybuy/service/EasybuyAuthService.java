@@ -68,6 +68,10 @@ System.out.println("DEMO OTP for " + mobile + " : " + otp);
     user.generateOtp(otp);
     repository.save(user);
 }
+
+    public List<EasybuyUser> getAllUsers() {
+    return repository.findAll();
+}
     // ================= UPDATE PROFILE =================
     @Transactional
     public EasybuyUser updateProfile(Long userId, String name, String email, String address, String pan) {
