@@ -2,6 +2,7 @@ package com.easybuy.controller;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -66,6 +67,11 @@ if (!mobile.matches("^[6-9]\\d{9}$")) {
             );
         }
     }
+
+    @GetMapping("/debug-users")
+public ResponseEntity<?> getAllUsers() {
+    return ResponseEntity.ok(service.getAllUsers());
+}
 
     // ================= GET USER =================
     @GetMapping("/user/{id}")
