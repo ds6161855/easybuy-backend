@@ -47,4 +47,8 @@ public class ProductController {
     ) {
         return productService.searchProducts(query, sort);
     }
+    @GetMapping("/duplicates")
+public List<Object[]> getDuplicates() {
+    return productRepository.findDuplicateProducts();
+}
 }
