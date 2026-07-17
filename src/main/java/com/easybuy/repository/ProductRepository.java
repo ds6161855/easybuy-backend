@@ -16,4 +16,6 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     	    String brand,
     	    String description
     	);
+    @Query("SELECT p.name, COUNT(p) FROM Product p GROUP BY p.name HAVING COUNT(p) > 1")
+List<Object[]> findDuplicateProducts();
 }
